@@ -169,7 +169,7 @@ The Java program is a console application with no user interface and no hosted p
 - ✅ **Operational — Endpoint contracts.** `GET /` returns 200, `text/plain; charset=utf-8` and the 11 bytes `Hello world`; `GET /good-evening` returns 200, the same content type and the 12 bytes `Good evening`; `GET /nope` returns 404.
 - ✅ **Operational — Bind failure.** With the port already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero.
 - ✅ **Operational — Clean tree.** `git status --short` shows no new entry after an install and a run.
-- ✅ **Operational — Java program unchanged.** `java Hello.java` prints the 17-byte greeting with exit 0 and an empty error stream, and `javac -Xlint:all -Werror -d "$(mktemp -d)" Hello.java` exits 0 with no output — on OpenJDK 25.0.4.1 when the change was planned, and on 25.0.3 on the implementation host.
+- ✅ **Operational — Java program unchanged.** `java Hello.java` prints the 17-byte greeting with exit 0 and an empty error stream, and `B="$(mktemp -d)" && javac -Xlint:all -Werror -d "$B" Hello.java` exits 0 with no output — on OpenJDK 25.0.4.1 when the change was planned, and on 25.0.3 on the implementation host.
 
 **Never exercised at runtime:** the guide's rendered appearance. There is still no UI and no hosted page: the service's HTTP contract is verified with `curl` and the test suite, not a browser, and the guide's structure was asserted against its Markdown source rather than a rendered page, so nothing here was verified through a browser.
 
@@ -218,7 +218,7 @@ Rule compliance: the user rule requiring clean code with a comment on each funct
 
 # 6. Risk Assessment
 
-Whole categories of risk remain absent for the Java program and are listed once rather than as rows: it reads no input, dereferences no argument, opens no resource, binds no port, makes no network call and declares no manifest, so it carries no injection surface, no supply-chain exposure, no authentication or authorisation surface and no data-at-rest concern. The Express service changes that picture in bounded ways. It binds TCP port 3000 on all interfaces and reads the `PORT` variable, accepting only a decimal port from 1 to 65535 and rejecting any other value before binding, but serves fixed strings only: it reads no request input, needs no authentication and stores nothing. Its 68 npm packages introduce supply-chain exposure. What remains is forward-looking risk to the documentation, to future edits and to that dependency tree.
+Whole categories of risk remain absent for the Java program and are listed once rather than as rows: it reads no input, dereferences no argument, opens no resource, binds no port, makes no network call and declares no manifest, so it carries no injection surface, no supply-chain exposure, no authentication or authorisation surface and no data-at-rest concern. The Express service changes that picture in bounded ways. It binds TCP port 3000 on all interfaces and reads the `PORT` variable, accepting only a decimal port from 1 to 65535 and rejecting any other value before binding. Its two GET handlers serve fixed strings and ignore request data, and it needs no authentication and stores nothing. Express itself still parses each request's method, URL and headers, to route it and to answer conditional requests, and its built-in 404 for an unmatched path reflects the method and that pathname, URL-encoded and HTML-escaped, in a page sent with `Content-Security-Policy: default-src 'none'` and `X-Content-Type-Options: nosniff`, so the reflection is not a script-injection path. Its 68 npm packages introduce supply-chain exposure. What remains is forward-looking risk to the documentation, to future edits and to that dependency tree.
 
 | Risk | Category | Severity | Probability | Mitigation | Status |
 |---|---|---|---|---|---|
@@ -232,7 +232,7 @@ Whole categories of risk remain absent for the Java program and are listed once 
 | As recorded at `2a78292` for the documentation change: the branch is ahead of its remote and unpublished, so the documentation is not yet visible to anyone cloning the default branch | Operational | Low | High | Push the branch and merge the two-file change | Open, as recorded at `2a78292` |
 | Until the Express service change is merged, the default branch carries neither the service nor this guide's account of it; its eight-file diff against `2a78292` awaits review | Operational | Low | High | Push, review the eight-file diff and merge (Section 1.6, step 3) | Open |
 | Supply-chain exposure through the 68 npm packages the service installs | Security | Medium | Low | Every package is pinned by version and integrity hash in `package-lock.json` and installed with `npm ci`, whose default audit reports advisories without failing the install; no CI-scheduled audit gate runs, and `npm audit`, run by hand on 2026-09-28, found 0 vulnerabilities | Open |
-| The listener binds all interfaces, so the service is reachable beyond localhost wherever the host firewall allows | Security | Low | Low | It serves fixed public strings and reads no request input; run it locally | Open — accepted |
+| The listener binds all interfaces, so the service is reachable beyond localhost wherever the host firewall allows | Security | Low | Low | Its two GET handlers serve fixed public strings and ignore request data; Express's built-in 404 reflects only the method and the unmatched pathname, URL-encoded and HTML-escaped under CSP `default-src 'none'` and `nosniff`; run it locally | Open — accepted |
 | `npm ci` needs `registry.npmjs.org` for package tarballs on a cold cache, and its default audit contacts the registry on every run: the offline build property is partitioned, with the Java path still offline and the Node path not | Operational | Low | Medium | Prime the npm cache, then install with `npm ci --offline --no-audit --no-fund` | Open — accepted by design |
 | A future edit to `test/server.test.js` that moves setup into root-level `before` hooks would break on Node 20.0.0, where such hooks do not run ahead of top-level tests | Technical | Low | Low | Keep the per-test helper and re-run the suite on 20.0.0 after any change to its shape | Open |
 
@@ -288,7 +288,7 @@ Production readiness of the documentation change, as assessed at `2a78292`: **re
 
 # 9. Development Guide
 
-Every command below was executed against this repository on a Linux host, and the outputs shown are the real ones. The Java outputs are those recorded on OpenJDK 25.0.3; for the Express change the Java commands were re-checked on OpenJDK 25.0.4.1 and again on 25.0.3. The Node commands ran on Node 24.21.0 with npm 11.19.0, and the test suite also on the 20.0.0 floor (Section 3). All commands are run from the repository root unless stated otherwise.
+Every command below but one was executed against this repository on a Linux host, and the outputs shown are the observed ones. The exception is the V1–V9 suite invocation in Section 9.6, which was not run for this guide: the suite is kept outside the repository, so the result it names, all 37 assertions passing, is the expected one, carried from the Section 3 record as of `2a78292`, not an observed one; the snapshot commands before it were executed. Two qualifications apply to the rest. The service commands that name port 3000, 8080 or 31000 were run on another port through `PORT`, and their outputs matched apart from the port number. Every in-place compile, `javac Hello.java` as Path A in Section 9.4, in Section 9.7 and in Appendix A, ran in a throwaway clone rather than this checkout, together with the `java Hello` and `rm -f Hello.class` that follow it. The Java outputs are those recorded on OpenJDK 25.0.3; for the Express change the Java commands were re-checked on OpenJDK 25.0.4.1 and again on 25.0.3. The Node commands ran on Node 24.21.0 with npm 11.19.0, and the test suite also on the 20.0.0 floor when the change was planned and on 20.20.2 on the implementation host (Section 3). All commands are run from the repository root unless stated otherwise.
 
 ## 9.1 System Prerequisites
 
@@ -370,11 +370,10 @@ Two paths for the Java program, both documented in the project's own guide. The 
 javac Hello.java
 
 # Path B — compile to a fresh directory outside the checkout (recommended).
-B="$(mktemp -d)"
-javac -Xlint:all -d "$B" Hello.java
+B="$(mktemp -d)" && [ -d "$B" ] && javac -Xlint:all -d "$B" Hello.java
 ```
 
-Expected result for both: exit status 0 and no output at all. `-Xlint:all` is clean, and so is `-Werror`. If you used Path A, remove the artifact before committing:
+Expected result for both: exit status 0 and no output at all. `-Xlint:all` is clean, and so is `-Werror`. Path B, and every later command that uses `B` or, in Section 9.6, `O` or `S`, first confirms with a test such as `[ -d "$B" ]` that `mktemp -d` produced a directory. A failed `mktemp -d` then stops the command, where it would otherwise compile into the checkout (`javac -d ""` writes to the current directory) or write under `/`. If you used Path A, remove the artifact before committing:
 
 ```bash
 rm -f Hello.class && git status --short   # expect no output
@@ -385,9 +384,9 @@ rm -f Hello.class && git status --short   # expect no output
 The Java program is not a service — it writes one line and exits. Three launch forms, all verified:
 
 ```bash
-java -cp "$B" Hello    # from the Path B build directory
-java Hello             # after a Path A in-place compile, from the repository root
-java Hello.java        # direct source launch, no compile step, leaves no artifact
+[ -d "$B" ] && java -cp "$B" Hello    # from the Path B build directory
+java Hello                            # after a Path A in-place compile, from the repository root
+java Hello.java                       # direct source launch, no compile step, leaves no artifact
 ```
 
 Each prints:
@@ -405,7 +404,7 @@ npm start                # listens on port 3000
 PORT=8080 npm start      # listens on port 8080 instead
 ```
 
-The first form prints the following, and the second the same with port 8080; either stays resident until stopped with Ctrl-C or SIGTERM:
+The first form prints the following, and the second the same with port 8080; either stays resident until stopped with Ctrl-C, or with SIGTERM sent to the `node server.js` process. SIGTERM sent to the `npm` process alone ends npm but leaves `node server.js` serving on the port:
 
 ```text
 > hello@1.0.0 start
@@ -430,7 +429,7 @@ Every check in this section runs against the current tree, from the repository r
 Measure comment coverage. Exactly one warning is expected, for the implicit default constructor, which cannot carry a doc comment:
 
 ```bash
-javadoc -d "$B/jd" -quiet Hello.java
+[ -d "$B" ] && javadoc -d "$B/jd" -quiet Hello.java
 # Hello.java:6: warning: use of default constructor, which does not provide a comment
 ```
 
@@ -438,23 +437,25 @@ Prove the annotated source still behaves like the pre-comment source. `BASE` is 
 
 ```bash
 BASE=0726b1d
-O="$(mktemp -d)"; mkdir -p "$O/base"
-git show "$BASE:Hello.java" > "$O/base/Hello.java"   # the file name must match the public class
-javac -d "$O/old" "$O/base/Hello.java"
-java -cp "$O/old" Hello > "$O/old.out" 2> "$O/old.err"
-java -cp "$B"     Hello > "$O/new.out" 2> "$O/new.err"
+O="$(mktemp -d)" && [ -d "$O" ] && mkdir -p "$O/base" &&
+git show "$BASE:Hello.java" > "$O/base/Hello.java" &&   # the file name must match the public class
+javac -d "$O/old" "$O/base/Hello.java" &&
+java -cp "$O/old" Hello > "$O/old.out" 2> "$O/old.err" &&
+[ -d "$B" ] && java -cp "$B" Hello > "$O/new.out" 2> "$O/new.err" &&
 cmp "$O/old.out" "$O/new.out" && cmp "$O/old.err" "$O/new.err" && echo "behaviour identical"
 ```
 
 Prove the edit added comments and nothing else:
 
 ```bash
-diff "$O/base/Hello.java" Hello.java > "$O/d"
-grep -cE '^(<|[0-9,]+[dc][0-9,]+)' "$O/d"                 # expect 0 — no deletions or modifications
-grep '^> ' "$O/d" | sed 's/^> //' | tr -d '\r' > "$O/add"
-printf 'added=%s /**=%s */=%s //=%s\n' "$(wc -l < "$O/add")" \
-  "$(grep -c '^\s*/\*\*' "$O/add")" "$(grep -c '^\s*\*/' "$O/add")" "$(grep -c '^\s*//' "$O/add")"
-# expect: added=15 /**=2 */=2 //=2
+if [ -d "$O" ]; then
+  diff "$O/base/Hello.java" Hello.java > "$O/d"
+  grep -cE '^(<|[0-9,]+[dc][0-9,]+)' "$O/d"                 # expect 0 — no deletions or modifications
+  grep '^> ' "$O/d" | sed 's/^> //' | tr -d '\r' > "$O/add"
+  printf 'added=%s /**=%s */=%s //=%s\n' "$(wc -l < "$O/add")" \
+    "$(grep -c '^\s*/\*\*' "$O/add")" "$(grep -c '^\s*\*/' "$O/add")" "$(grep -c '^\s*//' "$O/add")"
+  # expect: added=15 /**=2 */=2 //=2
+fi
 ```
 
 Check the stored byte format, which is deliberately different per file:
@@ -489,26 +490,26 @@ npm test -- --test-reporter=tap        # expect the counter lines "# tests 3", "
 The suite encodes the guide as of `2a78292`, so it checks a snapshot of that commit, not the current tree. It takes four arguments — the tree, its `Hello.java`, its `README.md` and the notice date — and its comment-census check compares the working source against the tree's current commit. The snapshot therefore has the pre-comment revision `0726b1d` (the same revision as `BASE` above) as its current commit, with the `2a78292` files written on top as uncommitted edits: the state the suite was written against. The date is read from the snapshot's own notice, not the clock. Create the snapshot:
 
 ```bash
-S="$(mktemp -d)"; W="$S/snapshot"
-git clone -q "$PWD" "$W" && git -C "$W" checkout -q --detach 0726b1d
-git show 2a78292:Hello.java > "$W/Hello.java"   # stored bytes, CRLF kept
-git show 2a78292:README.md  > "$W/README.md"    # the 77-line guide as of 2a78292
-D="$(sed -n 's/^\*Modified \(.*\)\.\*$/\1/p' "$W/README.md")"   # expect 2026-09-16
+S="$(mktemp -d)" && [ -d "$S" ] && W="$S/snapshot" &&
+git clone -q "$PWD" "$W" && git -C "$W" checkout -q --detach 0726b1d &&
+git show 2a78292:Hello.java > "$W/Hello.java" &&   # stored bytes, CRLF kept
+git show 2a78292:README.md  > "$W/README.md" &&    # the 77-line guide as of 2a78292
+D="$(sed -n 's/^\*Modified \(.*\)\.\*$/\1/p' "$W/README.md")" &&   # expect 2026-09-16
 git -C "$W" diff --stat   # expect it to end: 2 files changed, 92 insertions(+), 1 deletion(-)
 ```
 
 Save the suite, unmodified, as `"$S/verify.sh"`, then run it from inside the snapshot, which serves a suite that calls `git` in its working directory as well as one that reads its first argument:
 
 ```bash
-(cd "$W" && bash "$S/verify.sh" "$W" "$W/Hello.java" "$W/README.md" "$D")   # expect all 37 assertions to pass
+[ -d "$S" ] && [ -d "$W" ] && (cd "$W" && bash "$S/verify.sh" "$W" "$W/Hello.java" "$W/README.md" "$D")   # expect all 37 assertions to pass
 ```
 
 The snapshot commands were executed as written; the suite itself was not re-run for this guide, so its expected result is the historical one recorded in Section 3. Do not run it against the checkout: there the current commit already holds the comments, so the census comparison is empty and four checks fail on a correct tree, and its guide checks describe the README as of `2a78292`, so its result on the current tree says nothing about the current README.
 
-Finally, clean up the scratch directories, the snapshot under `"$S"` included:
+Finally, clean up the scratch directories:
 
 ```bash
-rm -rf "$B" "$O" "$S" && git status --short   # expect no output
+for d in "$B" "$O" "$S"; do [ -d "$d" ] && rm -rf -- "$d"; done; git status --short   # expect no output
 ```
 
 ## 9.7 Example Usage
@@ -549,7 +550,7 @@ Good evening
 
 | Symptom | Cause | Resolution |
 |---|---|---|
-| `Could not find or load main class Hello` | No compiled class on the classpath, or you are not in the directory holding it | Compile first, or launch with `java -cp "$B" Hello`, where `B` names the directory the class was compiled into (Path B in Section 9.4); the class is in the default package, so the bare name is correct |
+| `Could not find or load main class Hello` | No compiled class on the classpath, or you are not in the directory holding it | Compile first, or launch with `[ -d "$B" ] && java -cp "$B" Hello`, where `B` names the directory the class was compiled into (Path B in Section 9.4); the class is in the default package, so the bare name is correct |
 | `error: class Hello is public, should be declared in a file named Hello.java` | You exported the source under another name — common when writing a baseline revision to a scratch file | Export into a directory as `Hello.java`, as the verification steps above do |
 | `javac Hello.java` leaves `Hello.class` in `git status` | `.gitignore` covers only `node_modules/`; class output is deliberately not ignored | Delete it, or compile to a directory outside the checkout with `-d` |
 | Verification reports `block census wrong: /**=0 */=0 //=0` | The census was given the current commit as its baseline, where the comments are already committed | Re-run with the pre-comment revision as the baseline |
@@ -569,12 +570,12 @@ Good evening
 | Purpose | Command | Expected Result |
 |---|---|---|
 | Compile in place | `javac Hello.java` | Exit 0, no output, `Hello.class` beside the source |
-| Compile outside the checkout | `B="$(mktemp -d)"; javac -Xlint:all -d "$B" Hello.java` | Exit 0, no diagnostics, working tree unchanged |
-| Launch a compiled class | `java -cp "$B" Hello` | `Hello from Java!`, empty error stream, exit 0 |
+| Compile outside the checkout | `B="$(mktemp -d)" && [ -d "$B" ] && javac -Xlint:all -d "$B" Hello.java` | Exit 0, no diagnostics, working tree unchanged |
+| Launch a compiled class | `[ -d "$B" ] && java -cp "$B" Hello` | `Hello from Java!`, empty error stream, exit 0 |
 | Launch from the repository root after an in-place compile | `java Hello` | Same output |
 | Launch the source directly | `java Hello.java` | Same output, no artifact; needs JDK 11 or later |
-| Measure comment coverage | `javadoc -d "$B/jd" -quiet Hello.java` | Exit 0 with exactly one warning, for the implicit default constructor |
-| Strictest static check | `javac -Xlint:all -Werror -d "$B" Hello.java` | Exit 0, empty error stream |
+| Measure comment coverage | `[ -d "$B" ] && javadoc -d "$B/jd" -quiet Hello.java` | Exit 0 with exactly one warning, for the implicit default constructor |
+| Strictest static check | `[ -d "$B" ] && javac -Xlint:all -Werror -d "$B" Hello.java` | Exit 0, empty error stream |
 | Install the service's dependencies | `npm ci` | 68 packages installed strictly from `package-lock.json` |
 | Confirm the Express version | `npm ls express` | `└── express@5.2.1` |
 | Start the service | `npm start` | `Hello service listening on http://localhost:3000`; stays resident |
@@ -600,18 +601,18 @@ The Java program binds no port, starts no listener and makes no network call. Th
 | Path | Role | Size |
 |---|---|---|
 | `Hello.java` | The only compilation unit: `public class Hello` in the default package with its `main` entry point, now carrying four explanatory comments | 20 lines / 1073 bytes |
-| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 80 lines / 3527 bytes |
+| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 75 lines / 3173 bytes |
 | `package.json` | The npm manifest: `express` at `^5.2.1`, the `start` and `test` scripts, `engines.node` `>=20.0.0` and the licence `GPL-3.0-only` | 17 lines / 374 bytes |
 | `package-lock.json` | Generated by npm and never hand-edited: `lockfileVersion` 3, 69 `packages` entries pinning 68 packages by version and integrity hash | 893 lines / 31108 bytes |
 | `.gitignore` | The single rule `node_modules/` | 1 line / 14 bytes |
 | `.nvmrc` | The Node version the service is verified on, `24.21.0` | 1 line / 8 bytes |
 | `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 166 lines / 10776 bytes |
 | `LICENSE` | Verbatim GNU General Public License, Version 3, 29 June 2007; referenced by the guide and never modified | 674 lines / 35149 bytes |
-| `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 120 lines / 4687 bytes |
+| `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 145 lines / 5911 bytes |
 | `blitzy/documentation/Project Guide.md` | The development record: status, validation results, open items and operator reference | This file |
 | `blitzy/documentation/Technical Specifications.md` | An archived earlier generation of the technical specification, kept as history; it does not describe the current tree | 8321 lines / 839724 bytes |
 
-The repository holds eleven tracked files: eight at the root, one in `test/` and two in `blitzy/documentation/`. `node_modules/` is created by `npm ci`, ignored by `.gitignore` and never tracked.
+The repository holds eleven tracked files — eight at the root, one in `test/` and two in `blitzy/documentation/`. `node_modules/` is created by `npm ci`, ignored by `.gitignore` and never tracked.
 
 ## D. Technology Versions
 

@@ -14,19 +14,14 @@ const app = express();
 app.set('case sensitive routing', true);
 app.set('strict routing', true);
 
-// Listening port used when the PORT variable is unset or empty.
 const DEFAULT_PORT = 3000;
 
-// Maps a raw PORT value to the TCP port to bind, or to null when the value
-// must be rejected. Unset or empty selects DEFAULT_PORT. An override must be
-// decimal digits only and name a port from 1 to 65535; it is returned as a
-// number, so leading zeros are dropped ('031000' becomes 31000) and the
-// startup line names the port actually bound. Anything else (text,
-// whitespace, a sign, hex, a decimal point, 0, or a number above 65535)
-// yields null, because app.listen would mishandle it: a non-numeric string
-// binds an IPC socket path instead of a TCP port, 0 binds a port chosen by
-// the OS that the startup line cannot name, and an out-of-range number
-// throws instead of reaching the listen callback.
+// Returns the TCP port to bind, or null so a bad PORT is rejected before
+// anything is bound. app.listen mishandles what the checks exclude: a
+// non-numeric string binds an IPC socket path instead of a TCP port, 0 binds
+// a port chosen by the OS that the startup line cannot name, and a number
+// above 65535 throws instead of reaching the listen callback. Returning a
+// number drops leading zeros, so the startup line names the port bound.
 function resolvePort(value) {
   if (value === undefined || value === '') {
     return DEFAULT_PORT;
@@ -56,8 +51,8 @@ app.get('/good-evening', (req, res) => {
 // two console calls rather than growing a second error path. Shutdown is
 // left to Node's default SIGINT/SIGTERM handling on purpose, with no
 // server.close() and no drain: keep-alive or in-flight connections still
-// open at that moment are cut, and because the handlers hold no state and
-// write nothing, a client whose request is interrupted simply retries it.
+// open at that moment are cut. The handlers hold no state and write nothing,
+// so a client can safely retry a request that was cut.
 if (require.main === module) {
   const port = resolvePort(process.env.PORT);
   const onListen = (error) => {

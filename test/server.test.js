@@ -11,8 +11,10 @@ const PLAIN_TEXT = 'text/plain; charset=utf-8';
 
 // Runs fn(baseUrl) against a fresh server bound to an ephemeral port chosen by
 // the operating system, so the suite never collides with a service started by
-// `npm start`, and closes that server once fn settles, pass or fail, or as
-// soon as the server itself reports an error.
+// `npm start`. A server that fails before 'listening' has bound nothing, so
+// the helper rejects without closing it and fn never runs. Once listening, the
+// server starts closing when fn settles, pass or fail, or as soon as it
+// reports an error, and the helper settles only after close completes.
 //
 // Each test takes its own server from this helper instead of sharing one set
 // up by a root-level hook: on Node 20.0.0 root-level hooks do not run ahead of
@@ -26,12 +28,18 @@ const PLAIN_TEXT = 'text/plain; charset=utf-8';
 // - Before 'listening', the helper rejects with the error and fn never runs.
 //   Whichever of the two readiness events fires first removes the listener
 //   for the other.
-// - While fn runs, fn races serverFailed, so the error fails the test at once
-//   rather than after fn finishes.
-// - During close, the error is thrown once close completes, unless fn has
-//   already failed the test with an error of its own.
-// An error after 'listening' also drops the open connections, so a request
-// still in flight cannot hold close() open and hang the test.
+// - While fn runs, the error starts teardown immediately, and because fn
+//   races serverFailed, the test fails with it once cleanup completes rather
+//   than after fn finishes.
+// - During close, the error fails the test once close completes, unless fn
+//   has already failed it.
+// Of several failures the test reports the first in this order: the error
+// that settled the race (fn's own or the server's), a server error that
+// arrived after fn passed, a close failure. A close failure is therefore
+// reported only when nothing else failed and never replaces an earlier error.
+// An error after 'listening' first stops the server accepting connections,
+// then drops the HTTP connections it has already accepted. In that order none
+// can be accepted after the drop and left to hold close() open.
 async function withServer(fn) {
   const server = app.listen(0);
   await new Promise((resolve, reject) => {
@@ -48,6 +56,18 @@ async function withServer(fn) {
   });
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
+  // A second server.close() reports ERR_SERVER_NOT_RUNNING, so the error
+  // listener and the finally block share one close. It settles with close's
+  // error, or undefined, rather than rejecting, so the listener can start it
+  // without awaiting it and no rejection goes unhandled.
+  let closed;
+  const closeServer = () => {
+    if (!closed) {
+      closed = new Promise((resolve) => server.close((err) => resolve(err)));
+    }
+    return closed;
+  };
+
   // Stays installed from here until close completes. Only the first error is
   // kept; a flag rather than the value marks it, so even an 'error' emitted
   // without an argument is not mistaken for no error.
@@ -63,25 +83,30 @@ async function withServer(fn) {
       serverError = err;
       failTest(err);
     }
+    closeServer();
     server.closeAllConnections();
   };
   server.on('error', onServerError);
 
+  let closeError;
   try {
     // Promise.race subscribes to both promises, so whichever settles second
     // is still handled and never surfaces as an unhandled rejection.
     await Promise.race([fn(baseUrl), serverFailed]);
   } finally {
     try {
-      await new Promise((resolve, reject) =>
-        server.close((err) => (err ? reject(err) : resolve()))
-      );
+      closeError = await closeServer();
     } finally {
       server.removeListener('error', onServerError);
     }
   }
+  // Reached only when fn passed: a failed race has already propagated from the
+  // try block, which closeServer() cannot override because it never rejects.
   if (serverErrored) {
     throw serverError;
+  }
+  if (closeError) {
+    throw closeError;
   }
 }
 
