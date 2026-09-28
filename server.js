@@ -1,3 +1,5 @@
+'use strict';
+
 // Express service answering two fixed plain-text endpoints. It is an entry
 // point independent of Hello.java: launched with `npm start`, it serves no
 // Java output, and Hello.java is not the source of any HTTP response.

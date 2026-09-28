@@ -62,7 +62,7 @@ No access issues identified. The repository, its branch, the JDK and Node toolch
 | Repository and branch | Read/write clone | None — working tree clean, four commits authored on the branch for the documentation change | Resolved | — |
 | JDK toolchain (`javac`, `java`, `javadoc`) | Local execution | None — resolved on PATH and exercised | Resolved | — |
 | Node toolchain (`node`, `npm`) | Local execution | None — Node 24.21.0 and npm 11.19.0 resolved on PATH and exercised | Resolved | — |
-| npm registry (`registry.npmjs.org`), external services, credentials | Read-only, no credential | None — `npm ci` downloads package tarballs from the registry only on cache misses, but by default it also submits the locked dependency list to the registry's audit endpoint on every run, warm cache included; `npm ci --offline --no-audit --no-fund` does neither. The registry was reachable when verified; the service binds local TCP port 3000; no other external service and no credential is used | Resolved | — |
+| npm registry (`registry.npmjs.org`), external services, credentials | Read-only, no credential | None — `npm ci` downloads package tarballs from the registry only on cache misses, but by default it also submits the locked dependency list to the registry's audit endpoint on every run, warm cache included; `npm ci --offline --no-audit --no-fund` does neither. The registry was reachable when verified; the service binds TCP port 3000 on all interfaces (Appendix B); no other external service and no credential is used | Resolved | — |
 
 ## 1.6 Recommended Next Steps
 
@@ -161,7 +161,7 @@ The Java program is a console application with no user interface and no hosted p
 - ✅ **Operational — Untracked-artifact claim.** Compiling inside a throwaway clone leaves the class file untracked and unignored, exactly as the Build section states.
 - ⚠ **Partial — Version-floor claim.** The compile-then-run path was exercised at release targets 11, 17 and 21, but the `JDK 11 or later` floor for the direct source launch has not been run on a JDK 11 runtime; only JDK 25 was available.
 
-**Express service checks — 2026-09-28.** The service was driven through the commands `README.md` publishes. All of the following were executed and observed.
+**Express service checks — 2026-09-28.** The service was driven through the commands `README.md` publishes. All of the following were executed and observed. On the implementation host, which forbids binding port 3000, the outputs naming port 3000 were observed on another port through `PORT`, matching apart from the port number, or with `listen` intercepted so that nothing was bound; they were observed on port 3000 itself when the change was planned.
 
 - ✅ **Operational — Install.** `npm ci` installs 68 packages strictly from `package-lock.json`, and `npm ls express` shows `express@5.2.1`.
 - ✅ **Operational — Startup.** `npm start` prints `Hello service listening on http://localhost:3000` and stays resident; `PORT` moves it to another port.
@@ -307,14 +307,14 @@ javadoc --version  # javadoc 25.0.3
 Any Node.js 24.21.0 on `PATH` serves; `node -v` then prints `v24.21.0`. The nvm version manager is optional. It can select the version recorded in `.nvmrc`, but it is a shell function rather than a program on `PATH`, so a shell that has not loaded it reports `nvm: command not found`. Load it from its install directory, named by `NVM_DIR`, then select the version from the repository root and confirm it:
 
 ```bash
-export NVM_DIR=/opt/nvm   # nvm's install directory; a default per-user install uses $HOME/.nvm
-. "$NVM_DIR/nvm.sh"       # loads the nvm shell function into this shell
-nvm install && nvm use    # reads .nvmrc and selects Node.js 24.21.0
-node -v                   # v24.21.0
-npm -v                    # 11.19.0
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"          # keeps a preset NVM_DIR, else nvm's default per-user directory
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # loads the nvm shell function into this shell
+nvm install && nvm use                           # reads .nvmrc and selects Node.js 24.21.0
+node -v                                          # v24.21.0
+npm -v                                           # 11.19.0
 ```
 
-In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the `nvm install && nvm use` line alone is enough; without nvm, the last two lines confirm the Node.js on `PATH`.
+An nvm installed anywhere other than `$HOME/.nvm`, such as a system-wide install in `/opt/nvm` or one under `$XDG_CONFIG_HOME/nvm`, needs `NVM_DIR` set to that directory before the block is run. In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the `nvm install && nvm use` line alone is enough; without nvm, the last two lines confirm the Node.js on `PATH`.
 
 ## 9.2 Environment Setup
 
@@ -601,12 +601,12 @@ The Java program binds no port, starts no listener and makes no network call. Th
 | Path | Role | Size |
 |---|---|---|
 | `Hello.java` | The only compilation unit: `public class Hello` in the default package with its `main` entry point, now carrying four explanatory comments | 20 lines / 1073 bytes |
-| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 75 lines / 3173 bytes |
+| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 77 lines / 3188 bytes |
 | `package.json` | The npm manifest: `express` at `^5.2.1`, the `start` and `test` scripts, `engines.node` `>=20.0.0` and the licence `GPL-3.0-only` | 17 lines / 374 bytes |
 | `package-lock.json` | Generated by npm and never hand-edited: `lockfileVersion` 3, 69 `packages` entries pinning 68 packages by version and integrity hash | 893 lines / 31108 bytes |
 | `.gitignore` | The single rule `node_modules/` | 1 line / 14 bytes |
 | `.nvmrc` | The Node version the service is verified on, `24.21.0` | 1 line / 8 bytes |
-| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 166 lines / 10776 bytes |
+| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 166 lines / 11034 bytes |
 | `LICENSE` | Verbatim GNU General Public License, Version 3, 29 June 2007; referenced by the guide and never modified | 674 lines / 35149 bytes |
 | `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 145 lines / 5911 bytes |
 | `blitzy/documentation/Project Guide.md` | The development record: status, validation results, open items and operator reference | This file |
@@ -647,7 +647,7 @@ The repository holds eleven tracked files — eight at the root, one in `test/` 
 | `mktemp -d` | Generates the per-run build and scratch directories, keeping class output out of the checkout |
 | Node test runner (`node --test`) | Runs `test/server.test.js` through `npm test`, auto-discovering `test/*.test.js` with no configuration file |
 | `npm` | Installs the locked tree with `npm ci`, starts the service with `npm start` and runs the suite with `npm test` |
-| `nvm` | Optional; a shell function, so it must be loaded with `. "$NVM_DIR/nvm.sh"` before use (Section 9.1); `nvm install && nvm use` then reads `.nvmrc` and selects Node 24.21.0 |
+| `nvm` | Optional; a shell function, so it must be loaded from `$NVM_DIR/nvm.sh` before use, with `NVM_DIR` defaulting to `$HOME/.nvm` (Section 9.1); `nvm install && nvm use` then reads `.nvmrc` and selects Node 24.21.0 |
 | `curl` | Requests the two endpoints and checks their status and media type |
 
 No linter, formatter, documentation generator or build tool is configured in the repository. The only test tooling is Node's built-in runner, run by `npm test`, with no configuration file and no added dependency.

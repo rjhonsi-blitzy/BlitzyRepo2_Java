@@ -34,12 +34,12 @@ For the Express service, Node.js and npm are required. The supported floor is No
 Any Node.js 24.21.0 on `PATH` serves; `node -v` then prints `v24.21.0`. The nvm version manager is optional. It can select the version recorded in `.nvmrc`, but it is a shell function rather than a program on `PATH`, so a shell that has not loaded it reports `nvm: command not found`. Load it from its install directory, named by `NVM_DIR`, then select the version from the repository root:
 
 ```bash
-export NVM_DIR=/opt/nvm   # nvm's install directory; a default per-user install uses $HOME/.nvm
-. "$NVM_DIR/nvm.sh"       # loads the nvm shell function into this shell
-nvm install && nvm use    # reads .nvmrc and selects Node.js 24.21.0
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"          # keeps a preset NVM_DIR, else nvm's default per-user directory
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # loads the nvm shell function into this shell
+nvm install && nvm use                           # reads .nvmrc and selects Node.js 24.21.0
 ```
 
-In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the last line alone is enough.
+An nvm installed anywhere other than `$HOME/.nvm`, such as a system-wide install in `/opt/nvm` or one under `$XDG_CONFIG_HOME/nvm`, needs `NVM_DIR` set to that directory before the block is run. In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the last line alone is enough.
 
 ## Build
 
