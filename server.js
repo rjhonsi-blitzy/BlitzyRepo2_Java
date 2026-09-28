@@ -5,6 +5,15 @@ const express = require('express');
 
 const app = express();
 
+// Match routes exactly. Express's defaults ignore letter case and a trailing
+// slash, so variants such as /GOOD-EVENING and /good-evening/ would otherwise
+// be answered with a greeting; with both settings on, every path other than
+// the two registered ones falls through to Express's built-in 404. Both must
+// be set before the first route: the router is created then and reads them
+// only once.
+app.set('case sensitive routing', true);
+app.set('strict routing', true);
+
 // Listening port used when the PORT variable is unset or empty.
 const DEFAULT_PORT = 3000;
 

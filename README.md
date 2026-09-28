@@ -29,7 +29,17 @@ For the Java program, a JDK is all that is required. This repository pins no Jav
 
 One prerequisite is specific to a single launch path. The direct source launch `java Hello.java` shown under Run is single-file source-code launch, which needs JDK 11 or later. The compile-then-run path carries no such floor and works on considerably older releases.
 
-For the Express service, Node.js and npm are required. The supported floor is Node.js 20.0.0, declared as `>=20.0.0` in the `engines.node` field of `package.json`. The version the service is developed and verified on is Node.js 24.21.0, recorded in `.nvmrc`, with the npm 11.19.0 bundled in that release; where nvm is installed, `nvm install && nvm use` run from the repository root reads `.nvmrc` and selects that version. `npm ci` installs the 68 packages pinned in `package-lock.json`, and on a machine whose npm cache is cold it needs access to the registry at `registry.npmjs.org` to fetch them. The lock file makes every install resolve the identical tree; it does not make the install work offline.
+For the Express service, Node.js and npm are required. The supported floor is Node.js 20.0.0, declared as `>=20.0.0` in the `engines.node` field of `package.json`. The version the service is developed and verified on is Node.js 24.21.0, recorded in `.nvmrc`, with the npm 11.19.0 bundled in that release. `npm ci` installs the 68 packages pinned in `package-lock.json`, and on a machine whose npm cache is cold it needs access to the registry at `registry.npmjs.org` to fetch them. The lock file makes every install resolve the identical tree; it does not make the install work offline.
+
+Any Node.js 24.21.0 on `PATH` serves; `node -v` then prints `v24.21.0`. The nvm version manager is optional. It can select the version recorded in `.nvmrc`, but it is a shell function rather than a program on `PATH`, so a shell that has not loaded it reports `nvm: command not found`. Load it from its install directory, named by `NVM_DIR`, then select the version from the repository root:
+
+```bash
+export NVM_DIR=/opt/nvm   # nvm's install directory; a default per-user install uses $HOME/.nvm
+. "$NVM_DIR/nvm.sh"       # loads the nvm shell function into this shell
+nvm install && nvm use    # reads .nvmrc and selects Node.js 24.21.0
+```
+
+In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the last line alone is enough.
 
 ## Build
 
@@ -78,14 +88,23 @@ Then start the service:
 npm start
 ```
 
-It prints `Hello service listening on http://localhost:3000` and stays resident, answering requests until you stop it with Ctrl-C. The port defaults to 3000, and the `PORT` environment variable overrides it, as in `PORT=8080 npm start`; the startup line and the request URLs then use that port. An override must be a decimal integer from 1 to 65535, and leading zeros are dropped, so `PORT=08080` listens on and reports port 8080. Any other non-empty value, such as text, `0` or a number above 65535, is rejected before anything is bound: the service prints `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with a non-zero status. If the port is already in use, the service prints a `Failed to bind port` line to standard error and exits with a non-zero status.
+It prints `Hello service listening on http://localhost:3000` and stays resident, answering requests until you stop it with Ctrl-C. The port defaults to 3000, and the `PORT` environment variable overrides it, as in `PORT=8080 npm start`; the startup line then names that port, and requests must be sent to it. An override must be a decimal integer from 1 to 65535, and leading zeros are dropped, so `PORT=08080` listens on and reports port 8080. Any other non-empty value, such as text, `0` or a number above 65535, is rejected before anything is bound: the service prints `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with a non-zero status. If the port is already in use, the service prints a `Failed to bind port` line to standard error and exits with a non-zero status.
 
-From a second shell, request each endpoint:
+From a second shell, request each endpoint. These requests assume the default port 3000:
 
 ```bash
 curl -s http://localhost:3000/
 curl -s http://localhost:3000/good-evening
 ```
+
+After `PORT=8080 npm start`, send the same requests to port 8080 instead:
+
+```bash
+curl -s http://localhost:8080/
+curl -s http://localhost:8080/good-evening
+```
+
+With `-s`, `curl` also stays silent when nothing is listening on the port: it prints nothing and exits with status 7, so a request that returns no output at all has not reached the service.
 
 Neither body ends in a newline, so the shell prompt continues on the same line as the greeting.
 
@@ -118,7 +137,7 @@ The Express service answers two endpoints, each with a fixed plain-text body tha
 | `GET` | `/` | 200 | `text/plain; charset=utf-8` | `Hello world` (11 bytes, no trailing newline) |
 | `GET` | `/good-evening` | 200 | `text/plain; charset=utf-8` | `Good evening` (12 bytes, no trailing newline) |
 
-Any other path gets the built-in Express 404 response, an HTML page; the service defines no custom 404 route.
+Routes match exactly: paths are case-sensitive and a trailing slash is significant, so any other path, including `/GOOD-EVENING` and `/good-evening/`, gets the built-in Express 404 response, an HTML page; the service defines no custom 404 route.
 
 ## Project Layout
 

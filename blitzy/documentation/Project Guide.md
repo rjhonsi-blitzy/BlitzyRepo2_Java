@@ -12,7 +12,7 @@ pie title Completion — 84.2%
     "Remaining Work (#FFFFFF)" : 6
 ```
 
-**84.2% complete** — 32.0 of 38.0 hours. Completed = Dark Blue `#5B39F3`; Remaining = White `#FFFFFF`. Sections 2.1 and 2.2 itemise both.
+**84.2% complete** — 32.0 of 38.0 hours. The chart sets no colours of its own, so the viewer's Mermaid theme supplies them — pale lavender `#ECECFF` for Completed and pale yellow `#ffffde` for Remaining under the default theme — and the `#5B39F3` and `#FFFFFF` in its labels are label text only. Sections 2.1 and 2.2 itemise both.
 
 | Metric | Value |
 |---|---|
@@ -62,15 +62,16 @@ No access issues identified. The repository, its branch, the JDK and Node toolch
 | Repository and branch | Read/write clone | None — working tree clean, four commits authored on the branch for the documentation change | Resolved | — |
 | JDK toolchain (`javac`, `java`, `javadoc`) | Local execution | None — resolved on PATH and exercised | Resolved | — |
 | Node toolchain (`node`, `npm`) | Local execution | None — Node 24.21.0 and npm 11.19.0 resolved on PATH and exercised | Resolved | — |
-| npm registry (`registry.npmjs.org`), external services, credentials | Read-only, no credential | None — `npm ci` reaches the registry only on a cold cache, and it was reachable when verified; the service binds local TCP port 3000; no other external service and no credential is used | Resolved | — |
+| npm registry (`registry.npmjs.org`), external services, credentials | Read-only, no credential | None — `npm ci` downloads package tarballs from the registry only on cache misses, but by default it also submits the locked dependency list to the registry's audit endpoint on every run, warm cache included; `npm ci --offline --no-audit --no-fund` does neither. The registry was reachable when verified; the service binds local TCP port 3000; no other external service and no credential is used | Resolved | — |
 
 ## 1.6 Recommended Next Steps
 
 1. **[High]** Run the comment-census verification with the pre-comment revision as its baseline (1.0 h).
-2. **[High]** Push the branch and merge the two-file change (0.5 h).
-3. **[Medium]** Decide citation coverage — two references, or every section with the budget and its check amended first (1.0 h).
-4. **[Medium]** Confirm the `JDK 11 or later` floor on a JDK 11 runtime, or soften the claim (1.0 h).
-5. **[Low]** Take the deferred hygiene decisions: licence notice, ignore rule for class output, line-ending policy, Java version pin (2.0 h).
+2. **[High]** Push the branch and merge the two-file change (0.5 h) — the documentation change's publication step, as recorded at `2a78292`.
+3. **[High]** Push, review and merge the Express service change — the eight-file diff against `2a78292`: the six added files, `README.md` and this guide (not estimated; outside the 38.0-hour record).
+4. **[Medium]** Decide citation coverage — two references, or every section with the budget and its check amended first (1.0 h).
+5. **[Medium]** Confirm the `JDK 11 or later` floor on a JDK 11 runtime, or soften the claim (1.0 h).
+6. **[Low]** Take the deferred hygiene decisions: licence notice, ignore rule for class output, line-ending policy, Java version pin (2.0 h).
 
 # 2. Project Hours Breakdown
 
@@ -94,12 +95,14 @@ No access issues identified. The repository, its branch, the JDK and Node toolch
 | Category | Hours | Priority |
 |---|---|---|
 | Verification baseline — supply the pre-comment revision to the comment-census check and record the invocation | 1.0 | High |
-| Branch publication and merge — push, review the two-file diff, merge | 0.5 | High |
+| Branch publication and merge, as recorded at `2a78292` for the documentation change — push, review the two-file diff, merge | 0.5 | High |
 | Citation-coverage decision — keep two stable-symbol references or extend to every body section (amend the budget and its check first) | 1.0 | Medium |
 | `JDK 11 or later` confirmation on a JDK 11 runtime, or softening the claim | 1.0 | Medium |
 | Rendered-guide review on the hosting platform — emphasis, tables, fenced blocks, relative links | 0.5 | Medium |
 | Deferred repository-hygiene decisions — per-file licence notice, ignore rule for build output (`node_modules/` now covered, class output still open), line-ending policy, Java version pin (Node now recorded by `.nvmrc` and `engines.node`) | 2.0 | Low |
 | **Total** | **6.0** | — |
+
+The Express service change dated 2026-09-28 has its own release action — push, review the eight-file diff against `2a78292`, merge (Section 1.6, step 3). It is not estimated and is not part of the 6.0 hours above.
 
 ## 2.3 Hours Reconciliation
 
@@ -226,15 +229,18 @@ Whole categories of risk remain absent for the Java program and are listed once 
 | The Java toolchain is unpinned (Node is recorded by `.nvmrc` and `engines.node`); a future JDK could change documentation-tool defaults or single-file launch behaviour and move the warning count the guide implies | Technical | Low | Low | Verified at release targets 11, 17 and 21; revisit if a Java version pin is adopted | Open |
 | The documented `JDK 11 or later` floor for the direct source launch has not been exercised on a JDK 11 runtime | Integration | Low | Low | Confirm once on a JDK 11 install, or soften the claim to the release targets actually exercised | Open |
 | A future edit to the Build section could reintroduce a fixed, predictable compiler-output path that another local process can pre-create or redirect through a symbolic link | Security | Low | Low | The guide's command generates a fresh owner-only directory and states the reason beside it, so the rationale is visible to the next editor | Mitigated |
-| The branch is ahead of its remote and unpublished, so the documentation is not yet visible to anyone cloning the default branch | Operational | Low | High | Push the branch and merge the two-file change | Open |
-| Supply-chain exposure through the 68 npm packages the service installs | Security | Medium | Low | Every package is pinned by version and integrity hash in `package-lock.json` and installed with `npm ci`; no automated audit runs | Open |
+| As recorded at `2a78292` for the documentation change: the branch is ahead of its remote and unpublished, so the documentation is not yet visible to anyone cloning the default branch | Operational | Low | High | Push the branch and merge the two-file change | Open, as recorded at `2a78292` |
+| Until the Express service change is merged, the default branch carries neither the service nor this guide's account of it; its eight-file diff against `2a78292` awaits review | Operational | Low | High | Push, review the eight-file diff and merge (Section 1.6, step 3) | Open |
+| Supply-chain exposure through the 68 npm packages the service installs | Security | Medium | Low | Every package is pinned by version and integrity hash in `package-lock.json` and installed with `npm ci`, whose default audit reports advisories without failing the install; no CI-scheduled audit gate runs, and `npm audit`, run by hand on 2026-09-28, found 0 vulnerabilities | Open |
 | The listener binds all interfaces, so the service is reachable beyond localhost wherever the host firewall allows | Security | Low | Low | It serves fixed public strings and reads no request input; run it locally | Open — accepted |
-| `npm ci` needs `registry.npmjs.org` on a cold cache: the offline build property is partitioned, with the Java path still offline and the Node path not | Operational | Low | Medium | Prime the npm cache, then install with `npm ci --offline --no-audit --no-fund` | Open — accepted by design |
+| `npm ci` needs `registry.npmjs.org` for package tarballs on a cold cache, and its default audit contacts the registry on every run: the offline build property is partitioned, with the Java path still offline and the Node path not | Operational | Low | Medium | Prime the npm cache, then install with `npm ci --offline --no-audit --no-fund` | Open — accepted by design |
 | A future edit to `test/server.test.js` that moves setup into root-level `before` hooks would break on Node 20.0.0, where such hooks do not run ahead of top-level tests | Technical | Low | Low | Keep the per-test helper and re-run the suite on 20.0.0 after any change to its shape | Open |
 
 # 7. Visual Project Status
 
-Colour key throughout: Completed work = Dark Blue `#5B39F3`; Remaining work = White `#FFFFFF`.
+This section shows the documentation project's state as recorded at `2a78292`: the 38.0-hour effort record of Sections 1.2 and 2, and the 23 specification requirements tracked for that documentation change — a historical count, not a score against the current specification. The Express service change dated 2026-09-28 is not measured here; it is assessed at the end of Section 8, and its effort is not estimated.
+
+The guide's three charts — the one in Section 1.2 and the two below — set no colours of their own, so the viewer's Mermaid theme supplies them: under the default theme the first slice (Completed Work, or Completed) is pale lavender `#ECECFF` and the second (Remaining Work, or Partially Completed) pale yellow `#ffffde`; under the dark theme they are near-black `#0b0000` and plum `#4d1037`.
 
 ```mermaid
 pie title Project Hours Breakdown — 84.2% Complete
@@ -264,6 +270,8 @@ By priority: High 1.5 hours, Medium 2.5 hours, Low 2.0 hours.
 
 # 8. Summary & Recommendations
 
+The five paragraphs that follow are the documentation change's assessment as recorded at `2a78292`, kept as history with its figures unchanged: 84.2% complete, 32.0 of 38.0 hours, 22 of 23 specification requirements completed and 1 partially, and 49 of 49 checks passed. Only the fifth paragraph's closing recommendation has been brought forward, to name the committed Node suite. The Express service change is assessed separately in the last two paragraphs.
+
 What was asked for has been delivered on both counts. `Hello.java` now explains itself: four comments, one per written functionality, covering the class contract, the entry point and its never-read `args` parameter, the single write to standard output, and the fact that the method returns normally with no explicit exit call. `README.md` is now a project guide rather than a placeholder, opening with an italic summary of exactly these two changes and continuing through prerequisites, build, both launch paths, the expected output, the layout and the licence. The project stands at **84.2% complete — 32.0 of 38.0 hours** — with every specification requirement either delivered or, in one case, delivered and awaiting a change to how its verification is invoked.
 
 The evidence behind that is narrow but deep, as it should be for a two-file change. The delivered source compiles with zero diagnostics under `-Xlint:all -Werror`; its standard output, error stream and exit status are byte-identical to a build of the pre-comment source, and its bytecode is identical once debug information is suppressed — so the claim that nothing but comments was added is proven rather than asserted. Every command the guide tells an operator to type was executed as written, including the alternate build destination, and the guide's expected-output block compares byte-for-byte against real standard output. Forty-nine acceptance checks were executed and all forty-nine passed. The stored formatting that makes this repository awkward to edit — CRLF on every source line, LF in the guide — survived intact.
@@ -272,9 +280,11 @@ Three gaps are worth the reader's attention, none of them a defect. First, the c
 
 The critical path to production is short: supply the verification baseline, glance at the rendered guide, then push and merge. That is two hours of work, and nothing in it depends on a decision. The remaining four hours are genuine decisions rather than tasks — whether to extend source citations to every guide section (which requires amending the two-reference budget and its check first), whether to confirm the version floor on a real JDK 11 runtime or soften the claim, and whether to close the five hygiene items the plan deliberately declined: the per-file copyright notice that needs a rights holder the repository does not record, an ignore rule for build output, an explicit line-ending policy, a version pin, and an automated gate.
 
-Production readiness: **ready to merge.** For a documentation change to a program whose behaviour is provably untouched, the risk of releasing is close to zero, and the guide measurably closes the gaps that made this repository opaque. The one recommendation that outlives this change is the third risk in Section 6 — with no CI gate, and a committed Node suite that nothing runs automatically, the guide's accuracy depends on future editors honouring the stable-symbol citations that let each claim be checked at its origin. Success is measurable and already measured: four of four functionalities commented, eight of eight guide sections present, two of two changes highlighted, three of three observable behaviours documented, and documentable-member coverage at two of three with the third unreachable by design.
+Production readiness of the documentation change, as assessed at `2a78292`: **ready to merge.** For a documentation change to a program whose behaviour is provably untouched, the risk of releasing is close to zero, and the guide measurably closes the gaps that made this repository opaque. The one recommendation that outlives this change is the third risk in Section 6 — with no CI gate, and a committed Node suite that nothing runs automatically, the guide's accuracy depends on future editors honouring the stable-symbol citations that let each claim be checked at its origin. Success is measurable and already measured: four of four functionalities commented, eight of eight guide sections present, two of two changes highlighted, three of three observable behaviours documented, and documentable-member coverage at two of three with the third unreachable by design.
 
-**Express service change — 2026-09-28.** The repository now also serves two plain-text endpoints from one Express 5.2.1 application: `GET /` answers `Hello world` and `GET /good-evening` answers `Good evening`, while `Hello.java` and its `Hello from Java!` console contract are untouched. The evidence: `test/server.test.js` passes 3 of 3 on Node 24.21.0 and on the 20.0.0 floor (Section 3), `npm ci` installs the 68 locked packages, the working tree stays clean after an install and a run, and the Java program re-checks clean on OpenJDK 25.0.4.1 (Section 4). Of the five hygiene items above, the change partly settles two — `.gitignore` covers `node_modules/` but not class output, and Node is recorded by `.nvmrc` and `engines.node` while Java stays unpinned — and it commits a suite that no CI gate yet runs. The effort and completion figures above are not re-estimated for it.
+**Express service change — 2026-09-28.** The repository now also serves two plain-text endpoints from one Express 5.2.1 application: `GET /` answers `Hello world` and `GET /good-evening` answers `Good evening`, while `Hello.java` and its `Hello from Java!` console contract are untouched. The evidence: `test/server.test.js` passes 3 of 3 on Node 24.21.0 and on the 20.0.0 floor, and on 20.20.2 on the implementation host (Section 3), `npm ci` installs the 68 locked packages, the working tree stays clean after an install and a run, and the Java program re-checks clean on OpenJDK 25.0.4.1, and on 25.0.3 on the implementation host (Section 4). Of the five hygiene items above, the change partly settles two — `.gitignore` covers `node_modules/` but not class output, and Node is recorded by `.nvmrc` and `engines.node` while Java stays unpinned — and it commits a suite that no CI gate yet runs. The effort and completion figures above are not re-estimated for it.
+
+**Express service readiness — 2026-09-28.** This is a separate, qualified assessment, not an extension of the verdict above. The change is ready to merge as a local tutorial service, subject to review of its eight-file diff against `2a78292`, and it has not been assessed for deployment beyond a local machine. Its release risk is low rather than close to zero because, unlike the documentation change, it adds a runtime component. Four open risks in Section 6 qualify it: a long-lived listener on all interfaces that serves fixed public strings with no authentication; supply-chain exposure through 68 locked npm packages, whose advisories `npm ci` reports by default and `npm audit` checked by hand (0 vulnerabilities on 2026-09-28) but no CI-scheduled gate checks; an install that needs `registry.npmjs.org` unless run offline from a primed cache; and a committed suite that no CI executor runs. The path to release is push, review and merge (Section 1.6, step 3). Running the service beyond a local machine would first need the listener restricted or firewalled, and the owner's decision on an audit and test gate. None of this is estimated in the 38.0-hour record.
 
 # 9. Development Guide
 
@@ -294,13 +304,17 @@ javac -version     # javac 25.0.3
 javadoc --version  # javadoc 25.0.3
 ```
 
-Where nvm is installed, select the Node version recorded in `.nvmrc` and confirm it:
+Any Node.js 24.21.0 on `PATH` serves; `node -v` then prints `v24.21.0`. The nvm version manager is optional. It can select the version recorded in `.nvmrc`, but it is a shell function rather than a program on `PATH`, so a shell that has not loaded it reports `nvm: command not found`. Load it from its install directory, named by `NVM_DIR`, then select the version from the repository root and confirm it:
 
 ```bash
-nvm install && nvm use   # reads .nvmrc
-node -v                  # v24.21.0
-npm -v                   # 11.19.0
+export NVM_DIR=/opt/nvm   # nvm's install directory; a default per-user install uses $HOME/.nvm
+. "$NVM_DIR/nvm.sh"       # loads the nvm shell function into this shell
+nvm install && nvm use    # reads .nvmrc and selects Node.js 24.21.0
+node -v                   # v24.21.0
+npm -v                    # 11.19.0
 ```
+
+In a shell that has already loaded nvm, where `command -v nvm` prints `nvm`, the `nvm install && nvm use` line alone is enough; without nvm, the last two lines confirm the Node.js on `PATH`.
 
 ## 9.2 Environment Setup
 
@@ -384,13 +398,14 @@ Hello from Java!
 
 Exit status is 0, the error stream is empty, and command-line arguments are accepted but never read — the output is identical whether or not you pass any.
 
-**Express service.** Install once with `npm ci` (Section 9.3), then start the service:
+**Express service.** Install once with `npm ci` (Section 9.3), then start the service. The first form below listens on the default port 3000; the second sets `PORT` to listen on another port, which must be a decimal integer from 1 to 65535:
 
 ```bash
-npm start                # PORT=<n> npm start, <n> from 1 to 65535, listens on port <n> instead of 3000
+npm start                # listens on port 3000
+PORT=8080 npm start      # listens on port 8080 instead
 ```
 
-It prints the following and stays resident until stopped with Ctrl-C or SIGTERM:
+The first form prints the following, and the second the same with port 8080; either stays resident until stopped with Ctrl-C or SIGTERM:
 
 ```text
 > hello@1.0.0 start
@@ -399,16 +414,18 @@ It prints the following and stays resident until stopped with Ctrl-C or SIGTERM:
 Hello service listening on http://localhost:3000
 ```
 
-From a second shell, request each endpoint:
+From a second shell, request each endpoint. These requests assume the default port 3000; after `PORT=8080 npm start`, replace `3000` with `8080` in each URL:
 
 ```bash
 curl -s http://localhost:3000/               # Hello world
 curl -s http://localhost:3000/good-evening   # Good evening
 ```
 
-Both bodies are plain text (`text/plain; charset=utf-8`) with no trailing newline, so the shell prompt continues on the same line. Any other path gets Express's built-in 404. If the port is already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero. A `PORT` override is bound and reported as a number, so `PORT=031000 npm start` listens on and prints port 31000. A value that is not a decimal integer from 1 to 65535, such as `PORT=0` or `PORT=abc`, is rejected before anything is bound: the service writes `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with status 1.
+Both bodies are plain text (`text/plain; charset=utf-8`) with no trailing newline, so the shell prompt continues on the same line. Routing is exact — paths are case-sensitive and a trailing slash is significant — so any other path, including `/GOOD-EVENING` and `/good-evening/`, gets Express's built-in 404. If the port is already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero. A `PORT` override is bound and reported as a number, so `PORT=031000 npm start` listens on and prints port 31000. A value that is not a decimal integer from 1 to 65535, such as `PORT=0` or `PORT=abc`, is rejected before anything is bound: the service writes `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with status 1.
 
 ## 9.6 Verification Steps
+
+Every check in this section runs against the current tree, from the repository root, except the V1–V9 suite at its end, which runs only against a scratch snapshot of `2a78292`.
 
 Measure comment coverage. Exactly one warning is expected, for the implicit default constructor, which cannot carry a doc comment:
 
@@ -449,11 +466,14 @@ printf 'README.md cr=%s\n' "$(tr -cd '\r' < README.md | wc -c)"          # expec
 tail -c 1 README.md | od -An -c                                          # expect \n
 ```
 
-Check the guide's structure, summary budget and links:
+Check the guide's structure, summary budget, notice, highlighting, citations and links:
 
 ```bash
 grep '^## ' README.md    # expect the eight sections in order, Summary of Changes first
 awk '/^## Summary of Changes$/{f=1;next} /^## /{f=0} f' README.md | wc -w   # expect 69 (limit 70); 55 as of 2a78292
+grep -m1 '^\*Modified ' README.md    # expect *Modified 2026-09-28.*, the notice for this change
+grep -cE '^(- )?\*[^*].*\*$' README.md; grep -c '\*' README.md   # expect 7 twice: the notice plus six entries covering the eight changed files, and no asterisk elsewhere
+grep -cE '[A-Za-z]+\.(java|js|json|md):[0-9]' README.md   # expect 0 — sources cited by symbol, never by line number
 grep -oE '\[[^]]+\]\([^)]+\)' README.md    # expect exactly the two relative links, [Hello.java](Hello.java) and [LICENSE](LICENSE)
 ```
 
@@ -464,16 +484,28 @@ npm test                               # expect 3 tests: 3 passing, 0 failing
 npm test -- --test-reporter=tap        # expect the counter lines "# tests 3", "# pass 3", "# fail 0"
 ```
 
-The project's full acceptance suite (checks V1–V9) is an external, uncommitted procedure reproduced in the project specification, and it encodes the guide as of `2a78292`. Save it to a scratch file outside the checkout and run it there, never inside the checkout. The committed test suite is the Express service's own, in `test/server.test.js`, run by `npm test` above:
+**Historical acceptance suite (V1–V9).** The project's full acceptance suite is not committed to this repository, and the archived `blitzy/documentation/Technical Specifications.md` (version 1.0) does not reproduce it. Obtain it from the project's current Technical Specification (version 2.0, baselined at `2a78292`), which reproduces it and is kept outside this repository. Save it unmodified to a scratch directory and run it there — never copy it into the checkout or commit it. Nothing in the repository runs or needs it; without it, the current-tree checks above are the verification route. The committed test suite is the Express service's own, `test/server.test.js`, run by `npm test` above.
+
+The suite encodes the guide as of `2a78292`, so it checks a snapshot of that commit, not the current tree. It takes four arguments — the tree, its `Hello.java`, its `README.md` and the notice date — and its comment-census check compares the working source against the tree's current commit. The snapshot therefore has the pre-comment revision `0726b1d` (the same revision as `BASE` above) as its current commit, with the `2a78292` files written on top as uncommitted edits: the state the suite was written against. The date is read from the snapshot's own notice, not the clock. Create the snapshot:
 
 ```bash
-S="$(mktemp -d)"     # paste the suite into "$S/verify.sh"
-bash "$S/verify.sh" "$PWD" "$PWD/Hello.java" "$PWD/README.md" "$(date -u +%F)"
+S="$(mktemp -d)"; W="$S/snapshot"
+git clone -q "$PWD" "$W" && git -C "$W" checkout -q --detach 0726b1d
+git show 2a78292:Hello.java > "$W/Hello.java"   # stored bytes, CRLF kept
+git show 2a78292:README.md  > "$W/README.md"    # the 77-line guide as of 2a78292
+D="$(sed -n 's/^\*Modified \(.*\)\.\*$/\1/p' "$W/README.md")"   # expect 2026-09-16
+git -C "$W" diff --stat   # expect it to end: 2 files changed, 92 insertions(+), 1 deletion(-)
 ```
 
-Its comment-census check compares the working source against a baseline revision. Give it the pre-comment revision (`0726b1d`); with the current commit as the baseline the comparison is empty and four checks fail on a tree that is correct.
+Save the suite, unmodified, as `"$S/verify.sh"`, then run it from inside the snapshot, which serves a suite that calls `git` in its working directory as well as one that reads its first argument:
 
-Finally, clean up the scratch directories:
+```bash
+(cd "$W" && bash "$S/verify.sh" "$W" "$W/Hello.java" "$W/README.md" "$D")   # expect all 37 assertions to pass
+```
+
+The snapshot commands were executed as written; the suite itself was not re-run for this guide, so its expected result is the historical one recorded in Section 3. Do not run it against the checkout: there the current commit already holds the comments, so the census comparison is empty and four checks fail on a correct tree, and its guide checks describe the README as of `2a78292`, so its result on the current tree says nothing about the current README.
+
+Finally, clean up the scratch directories, the snapshot under `"$S"` included:
 
 ```bash
 rm -rf "$B" "$O" "$S" && git status --short   # expect no output
@@ -481,7 +513,7 @@ rm -rf "$B" "$O" "$S" && git status --short   # expect no output
 
 ## 9.7 Example Usage
 
-```bash
+```console
 $ javac Hello.java && java Hello
 Hello from Java!
 
@@ -495,7 +527,7 @@ exit=0
 
 A service session: install and start in one shell, then request from a second. The `; echo` supplies the newline the bodies do not carry.
 
-```bash
+```console
 $ npm ci                 # its summary line begins "added 68 packages"
 $ npm start
 
@@ -505,7 +537,7 @@ $ npm start
 Hello service listening on http://localhost:3000
 ```
 
-```bash
+```console
 $ curl -s http://localhost:3000/; echo
 Hello world
 
@@ -517,14 +549,14 @@ Good evening
 
 | Symptom | Cause | Resolution |
 |---|---|---|
-| `Could not find or load main class Hello` | No compiled class on the classpath, or you are not in the directory holding it | Compile first, or launch with `java -cp <build dir> Hello`; the class is in the default package, so the bare name is correct |
+| `Could not find or load main class Hello` | No compiled class on the classpath, or you are not in the directory holding it | Compile first, or launch with `java -cp "$B" Hello`, where `B` names the directory the class was compiled into (Path B in Section 9.4); the class is in the default package, so the bare name is correct |
 | `error: class Hello is public, should be declared in a file named Hello.java` | You exported the source under another name — common when writing a baseline revision to a scratch file | Export into a directory as `Hello.java`, as the verification steps above do |
 | `javac Hello.java` leaves `Hello.class` in `git status` | `.gitignore` covers only `node_modules/`; class output is deliberately not ignored | Delete it, or compile to a directory outside the checkout with `-d` |
 | Verification reports `block census wrong: /**=0 */=0 //=0` | The census was given the current commit as its baseline, where the comments are already committed | Re-run with the pre-comment revision as the baseline |
 | Verification reports mixed line endings or `final terminator not CRLF` | An editor normalised `Hello.java` to LF on save | Restore the file and re-apply the edit in byte mode, re-emitting CRLF on every line including added ones |
 | `javadoc` reports one warning | Expected: the implicit default constructor can carry no doc comment | No action; documenting it would require declaring a constructor, which is out of scope |
 | The direct source launch fails on an older JDK | Single-file source launch needs JDK 11 or later | Use the compile-then-run path, which has no such floor |
-| `npm start` reports `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` | Another process already holds the port | Start on another port with `PORT=<n> npm start`, `<n>` from 1 to 65535, or stop that process |
+| `npm start` reports `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` | Another process already holds the port | Start on another port, such as `PORT=8080 npm start` (`PORT` takes a decimal integer from 1 to 65535), or stop that process |
 | `npm start` reports `Failed to bind port: PORT must be a decimal integer from 1 to 65535` | `PORT` holds something other than a decimal integer from 1 to 65535: text, surrounding whitespace, a sign, hex, a decimal point, `0` or a number above 65535. Nothing was bound | Set `PORT` to a port from 1 to 65535, or unset it to use 3000 |
 | `npm ci` refuses to install because `package.json` and `package-lock.json` are not in sync | The manifest and the lock file disagree | Do not hand-edit the lock; regenerate it with `npm install express@5.2.1` and commit both files |
 | `npm ci` cannot reach `registry.npmjs.org` | Cold npm cache with no network access | Run it with network access, or prime the cache and use `npm ci --offline --no-audit --no-fund` |
@@ -546,7 +578,7 @@ Good evening
 | Install the service's dependencies | `npm ci` | 68 packages installed strictly from `package-lock.json` |
 | Confirm the Express version | `npm ls express` | `└── express@5.2.1` |
 | Start the service | `npm start` | `Hello service listening on http://localhost:3000`; stays resident |
-| Start the service on another port, `<n>` from 1 to 65535 | `PORT=<n> npm start` | The same line, with port `<n>` as a number, leading zeros dropped |
+| Start the service on another port, from 1 to 65535 | `PORT=8080 npm start` | `Hello service listening on http://localhost:8080`; leading zeros are dropped, so `PORT=08080` prints the same line |
 | Reject an invalid port | `PORT=0 npm start` | `Failed to bind port: PORT must be a decimal integer from 1 to 65535` on standard error, nothing bound, exit 1 |
 | Request the root endpoint | `curl -s http://localhost:3000/` | `Hello world`, no trailing newline |
 | Request the second endpoint | `curl -s http://localhost:3000/good-evening` | `Good evening`, no trailing newline |
@@ -568,14 +600,14 @@ The Java program binds no port, starts no listener and makes no network call. Th
 | Path | Role | Size |
 |---|---|---|
 | `Hello.java` | The only compilation unit: `public class Hello` in the default package with its `main` entry point, now carrying four explanatory comments | 20 lines / 1073 bytes |
-| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 71 lines / 3050 bytes |
+| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 80 lines / 3527 bytes |
 | `package.json` | The npm manifest: `express` at `^5.2.1`, the `start` and `test` scripts, `engines.node` `>=20.0.0` and the licence `GPL-3.0-only` | 17 lines / 374 bytes |
 | `package-lock.json` | Generated by npm and never hand-edited: `lockfileVersion` 3, 69 `packages` entries pinning 68 packages by version and integrity hash | 893 lines / 31108 bytes |
 | `.gitignore` | The single rule `node_modules/` | 1 line / 14 bytes |
 | `.nvmrc` | The Node version the service is verified on, `24.21.0` | 1 line / 8 bytes |
-| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 147 lines / 9595 bytes |
+| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 166 lines / 10776 bytes |
 | `LICENSE` | Verbatim GNU General Public License, Version 3, 29 June 2007; referenced by the guide and never modified | 674 lines / 35149 bytes |
-| `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 69 lines / 2714 bytes |
+| `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 120 lines / 4687 bytes |
 | `blitzy/documentation/Project Guide.md` | The development record: status, validation results, open items and operator reference | This file |
 | `blitzy/documentation/Technical Specifications.md` | An archived earlier generation of the technical specification, kept as history; it does not describe the current tree | 8321 lines / 839724 bytes |
 
@@ -614,7 +646,7 @@ The repository holds eleven tracked files: eight at the root, one in `test/` and
 | `mktemp -d` | Generates the per-run build and scratch directories, keeping class output out of the checkout |
 | Node test runner (`node --test`) | Runs `test/server.test.js` through `npm test`, auto-discovering `test/*.test.js` with no configuration file |
 | `npm` | Installs the locked tree with `npm ci`, starts the service with `npm start` and runs the suite with `npm test` |
-| `nvm` | Optional; `nvm install && nvm use` reads `.nvmrc` and selects Node 24.21.0 |
+| `nvm` | Optional; a shell function, so it must be loaded with `. "$NVM_DIR/nvm.sh"` before use (Section 9.1); `nvm install && nvm use` then reads `.nvmrc` and selects Node 24.21.0 |
 | `curl` | Requests the two endpoints and checks their status and media type |
 
 No linter, formatter, documentation generator or build tool is configured in the repository. The only test tooling is Node's built-in runner, run by `npm test`, with no configuration file and no added dependency.
