@@ -318,7 +318,7 @@ An nvm installed anywhere other than `$HOME/.nvm`, such as a system-wide install
 
 ## 9.2 Environment Setup
 
-No secret is read by any tracked file, and the only environment variable read is `PORT`: optional, read by `server.js` to choose the service's TCP port, default 3000 when unset or empty. An override must be a decimal integer from 1 to 65535, with leading zeros dropped; any other value is rejected before anything is bound, with a `Failed to bind port` line on standard error and exit status 1. `JAVA_HOME` is not required, because the compiler and launcher are on `PATH`; if a tool of yours needs it, derive it from the toolchain already on `PATH` rather than hard-coding an install location:
+No secret is read by any tracked file, and the only environment variable a tracked file reads is `PORT`: optional, read by `server.js` to choose the service's TCP port, default 3000 when unset or empty. An override must be a decimal integer from 1 to 65535, with leading zeros dropped; any other value is rejected before anything is bound, with a `Failed to bind port` line on standard error and exit status 1. Appendix E also lists `NODE_ENV`, `DEBUG` and `NODE_DEBUG`, optional variables read by Express, its dependencies or Node.js rather than by a tracked file; the project neither sets nor requires any of them. `JAVA_HOME` is not required, because the compiler and launcher are on `PATH`; if a tool of yours needs it, derive it from the toolchain already on `PATH` rather than hard-coding an install location:
 
 ```bash
 JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
@@ -634,6 +634,8 @@ The repository holds eleven tracked files — eight at the root, one in `test/` 
 | `JAVA_HOME` | No | Not used by anything in this project; the `PATH` binaries are sufficient. Set it inline if one of your own tools needs it |
 | `PORT` | No | TCP port for `server.js`; default 3000 when unset or empty. An override must be a decimal integer from 1 to 65535, leading zeros dropped; any other value is rejected before binding, with exit status 1 |
 | `NODE_ENV` | No | Read by Express itself to select its environment mode; this project neither sets nor requires it |
+| `DEBUG` | No | Read by the `debug` package (4.4.3) that Express, `router`, `finalhandler`, `send` and `body-parser` depend on. A namespace list such as `express:*` or `*` turns on diagnostic lines written to standard error only; standard output still carries only the startup line. `express:*` writes `express:application` lines at startup only, including the checkout's absolute `views` path; `*` adds route-registration lines at startup and per-request lines from the `router` and `finalhandler` namespaces, such as `router dispatching GET /?t=...`, which echoes the full request URL with its query string, and `finalhandler default 404`. `DEBUG_*` variables such as `DEBUG_COLORS` or `DEBUG_HIDE_DATE` only format that output. This project neither sets nor requires it; leave it unset in normal operation |
+| `NODE_DEBUG` | No | Read by Node.js itself, not by the project or Express. `NODE_DEBUG=http` writes Node's own per-connection `HTTP <pid>:` lines to standard error, and Node prints a warning that the setting can expose sensitive data. This project neither sets nor requires it; leave it unset |
 | — | — | No other variable and no secret is read by any tracked file |
 
 ## F. Developer Tools Guide
