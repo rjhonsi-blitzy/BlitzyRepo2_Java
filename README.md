@@ -78,7 +78,7 @@ Then start the service:
 npm start
 ```
 
-It prints `Hello service listening on http://localhost:3000` and stays resident, answering requests until you stop it with Ctrl-C. The port defaults to 3000, and the `PORT` environment variable overrides it, as in `PORT=8080 npm start`; the startup line and the request URLs then use that port. If the port is already in use, the service prints a `Failed to bind port` line to standard error and exits with a non-zero status.
+It prints `Hello service listening on http://localhost:3000` and stays resident, answering requests until you stop it with Ctrl-C. The port defaults to 3000, and the `PORT` environment variable overrides it, as in `PORT=8080 npm start`; the startup line and the request URLs then use that port. An override must be a decimal integer from 1 to 65535, and leading zeros are dropped, so `PORT=08080` listens on and reports port 8080. Any other non-empty value, such as text, `0` or a number above 65535, is rejected before anything is bound: the service prints `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with a non-zero status. If the port is already in use, the service prints a `Failed to bind port` line to standard error and exits with a non-zero status.
 
 From a second shell, request each endpoint:
 
@@ -99,7 +99,7 @@ It reports three tests, three passing and none failing. With the TAP reporter, `
 
 If you redirect the startup log, redirect it outside the checkout, for example `L="$(mktemp -d)" && npm start > "$L/start.log" 2>&1`. A log file written inside the checkout shows up as untracked content in `git status`, because `.gitignore` covers only `node_modules/`.
 
-Source: server.js (route handlers and app.listen)
+Source: server.js (route handlers, resolvePort and app.listen)
 
 ## Expected Output
 

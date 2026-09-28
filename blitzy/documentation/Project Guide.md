@@ -162,6 +162,7 @@ The Java program is a console application with no user interface and no hosted p
 
 - ✅ **Operational — Install.** `npm ci` installs 68 packages strictly from `package-lock.json`, and `npm ls express` shows `express@5.2.1`.
 - ✅ **Operational — Startup.** `npm start` prints `Hello service listening on http://localhost:3000` and stays resident; `PORT` moves it to another port.
+- ✅ **Operational — PORT validation.** Launched directly with `node server.js`, each of `abc`, ` 8080` (with a leading space), `0`, `65536`, `-1`, `0x1F90` and `8080.5` is rejected before anything is bound: standard output stays empty, standard error carries the single line `Failed to bind port: PORT must be a decimal integer from 1 to 65535`, the process exits 1 at once, and no socket file appears in the working directory. Through the published `PORT=0 npm start`, standard output carries only npm's `> hello@1.0.0 start` and `> node server.js` prelude, standard error carries the same single line, and npm exits 1. On port 31000, `PORT=031000` binds 31000 and prints `Hello service listening on http://localhost:31000`, the same line as `PORT=31000`; with that port held, a second start writes `Failed to bind port 31000: listen EADDRINUSE: address already in use :::31000` and exits 1. Unset and empty `PORT` both select 3000.
 - ✅ **Operational — Endpoint contracts.** `GET /` returns 200, `text/plain; charset=utf-8` and the 11 bytes `Hello world`; `GET /good-evening` returns 200, the same content type and the 12 bytes `Good evening`; `GET /nope` returns 404.
 - ✅ **Operational — Bind failure.** With the port already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero.
 - ✅ **Operational — Clean tree.** `git status --short` shows no new entry after an install and a run.
@@ -214,7 +215,7 @@ Rule compliance: the user rule requiring clean code with a comment on each funct
 
 # 6. Risk Assessment
 
-Whole categories of risk remain absent for the Java program and are listed once rather than as rows: it reads no input, dereferences no argument, opens no resource, binds no port, makes no network call and declares no manifest, so it carries no injection surface, no supply-chain exposure, no authentication or authorisation surface and no data-at-rest concern. The Express service changes that picture in bounded ways. It binds TCP port 3000 on all interfaces and reads the `PORT` variable, but serves fixed strings only: it reads no request input, needs no authentication and stores nothing. Its 68 npm packages introduce supply-chain exposure. What remains is forward-looking risk to the documentation, to future edits and to that dependency tree.
+Whole categories of risk remain absent for the Java program and are listed once rather than as rows: it reads no input, dereferences no argument, opens no resource, binds no port, makes no network call and declares no manifest, so it carries no injection surface, no supply-chain exposure, no authentication or authorisation surface and no data-at-rest concern. The Express service changes that picture in bounded ways. It binds TCP port 3000 on all interfaces and reads the `PORT` variable, accepting only a decimal port from 1 to 65535 and rejecting any other value before binding, but serves fixed strings only: it reads no request input, needs no authentication and stores nothing. Its 68 npm packages introduce supply-chain exposure. What remains is forward-looking risk to the documentation, to future edits and to that dependency tree.
 
 | Risk | Category | Severity | Probability | Mitigation | Status |
 |---|---|---|---|---|---|
@@ -303,7 +304,7 @@ npm -v                   # 11.19.0
 
 ## 9.2 Environment Setup
 
-No secret is read by any tracked file, and the only environment variable read is `PORT`: optional, read by `server.js` to choose the service's TCP port, default 3000. `JAVA_HOME` is not required, because the compiler and launcher are on `PATH`; if a tool of yours needs it, derive it from the toolchain already on `PATH` rather than hard-coding an install location:
+No secret is read by any tracked file, and the only environment variable read is `PORT`: optional, read by `server.js` to choose the service's TCP port, default 3000 when unset or empty. An override must be a decimal integer from 1 to 65535, with leading zeros dropped; any other value is rejected before anything is bound, with a `Failed to bind port` line on standard error and exit status 1. `JAVA_HOME` is not required, because the compiler and launcher are on `PATH`; if a tool of yours needs it, derive it from the toolchain already on `PATH` rather than hard-coding an install location:
 
 ```bash
 JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
@@ -386,7 +387,7 @@ Exit status is 0, the error stream is empty, and command-line arguments are acce
 **Express service.** Install once with `npm ci` (Section 9.3), then start the service:
 
 ```bash
-npm start                # PORT=<n> npm start listens on port <n> instead of 3000
+npm start                # PORT=<n> npm start, <n> from 1 to 65535, listens on port <n> instead of 3000
 ```
 
 It prints the following and stays resident until stopped with Ctrl-C or SIGTERM:
@@ -405,7 +406,7 @@ curl -s http://localhost:3000/               # Hello world
 curl -s http://localhost:3000/good-evening   # Good evening
 ```
 
-Both bodies are plain text (`text/plain; charset=utf-8`) with no trailing newline, so the shell prompt continues on the same line. Any other path gets Express's built-in 404. If the port is already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero.
+Both bodies are plain text (`text/plain; charset=utf-8`) with no trailing newline, so the shell prompt continues on the same line. Any other path gets Express's built-in 404. If the port is already held, the service writes `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` to standard error and exits non-zero. A `PORT` override is bound and reported as a number, so `PORT=031000 npm start` listens on and prints port 31000. A value that is not a decimal integer from 1 to 65535, such as `PORT=0` or `PORT=abc`, is rejected before anything is bound: the service writes `Failed to bind port: PORT must be a decimal integer from 1 to 65535` to standard error and exits with status 1.
 
 ## 9.6 Verification Steps
 
@@ -523,7 +524,8 @@ Good evening
 | Verification reports mixed line endings or `final terminator not CRLF` | An editor normalised `Hello.java` to LF on save | Restore the file and re-apply the edit in byte mode, re-emitting CRLF on every line including added ones |
 | `javadoc` reports one warning | Expected: the implicit default constructor can carry no doc comment | No action; documenting it would require declaring a constructor, which is out of scope |
 | The direct source launch fails on an older JDK | Single-file source launch needs JDK 11 or later | Use the compile-then-run path, which has no such floor |
-| `npm start` reports `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` | Another process already holds the port | Start on another port with `PORT=<n> npm start`, or stop that process |
+| `npm start` reports `Failed to bind port 3000: listen EADDRINUSE: address already in use :::3000` | Another process already holds the port | Start on another port with `PORT=<n> npm start`, `<n>` from 1 to 65535, or stop that process |
+| `npm start` reports `Failed to bind port: PORT must be a decimal integer from 1 to 65535` | `PORT` holds something other than a decimal integer from 1 to 65535: text, surrounding whitespace, a sign, hex, a decimal point, `0` or a number above 65535. Nothing was bound | Set `PORT` to a port from 1 to 65535, or unset it to use 3000 |
 | `npm ci` refuses to install because `package.json` and `package-lock.json` are not in sync | The manifest and the lock file disagree | Do not hand-edit the lock; regenerate it with `npm install express@5.2.1` and commit both files |
 | `npm ci` cannot reach `registry.npmjs.org` | Cold npm cache with no network access | Run it with network access, or prime the cache and use `npm ci --offline --no-audit --no-fund` |
 | `node --test test/` fails with `MODULE_NOT_FOUND` | The runner does not accept the directory form as a test path | Use `npm test`, which runs the bare `node --test` and auto-discovers `test/*.test.js` |
@@ -544,7 +546,8 @@ Good evening
 | Install the service's dependencies | `npm ci` | 68 packages installed strictly from `package-lock.json` |
 | Confirm the Express version | `npm ls express` | `└── express@5.2.1` |
 | Start the service | `npm start` | `Hello service listening on http://localhost:3000`; stays resident |
-| Start the service on another port | `PORT=<n> npm start` | The same line, with port `<n>` |
+| Start the service on another port, `<n>` from 1 to 65535 | `PORT=<n> npm start` | The same line, with port `<n>` as a number, leading zeros dropped |
+| Reject an invalid port | `PORT=0 npm start` | `Failed to bind port: PORT must be a decimal integer from 1 to 65535` on standard error, nothing bound, exit 1 |
 | Request the root endpoint | `curl -s http://localhost:3000/` | `Hello world`, no trailing newline |
 | Request the second endpoint | `curl -s http://localhost:3000/good-evening` | `Good evening`, no trailing newline |
 | Check status and media type | `curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:3000/` | `200 text/plain; charset=utf-8` |
@@ -556,7 +559,7 @@ Good evening
 
 | Port | Protocol | Bound by | Interface | Override |
 |---|---|---|---|---|
-| 3000 | TCP | `npm start`, through `server.js` (`app.listen`) | All interfaces | `PORT` environment variable |
+| 3000 | TCP | `npm start`, through `server.js` (`app.listen`) | All interfaces | `PORT` environment variable, a decimal integer from 1 to 65535; any other non-empty value is rejected before binding |
 
 The Java program binds no port, starts no listener and makes no network call. The test suite binds an ephemeral port per test through `app.listen(0)` and closes it afterwards. There is no database, broker or cache in this project.
 
@@ -565,12 +568,12 @@ The Java program binds no port, starts no listener and makes no network call. Th
 | Path | Role | Size |
 |---|---|---|
 | `Hello.java` | The only compilation unit: `public class Hello` in the default package with its `main` entry point, now carrying four explanatory comments | 20 lines / 1073 bytes |
-| `server.js` | The Express service: both route handlers, the guarded `app.listen` binding and the exported `{ app }` | 36 lines / 1347 bytes |
+| `server.js` | The Express service: both route handlers, `resolvePort` validating `PORT` (default 3000, override 1 to 65535), the guarded `app.listen` binding and the exported `{ app }` | 71 lines / 3050 bytes |
 | `package.json` | The npm manifest: `express` at `^5.2.1`, the `start` and `test` scripts, `engines.node` `>=20.0.0` and the licence `GPL-3.0-only` | 17 lines / 374 bytes |
 | `package-lock.json` | Generated by npm and never hand-edited: `lockfileVersion` 3, 69 `packages` entries pinning 68 packages by version and integrity hash | 893 lines / 31108 bytes |
 | `.gitignore` | The single rule `node_modules/` | 1 line / 14 bytes |
 | `.nvmrc` | The Node version the service is verified on, `24.21.0` | 1 line / 8 bytes |
-| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 147 lines / 9197 bytes |
+| `README.md` | The project guide: change summary as the first content block, then overview, requirements, build, run, expected output, layout and licence, covering both the Java program and the service | 147 lines / 9595 bytes |
 | `LICENSE` | Verbatim GNU General Public License, Version 3, 29 June 2007; referenced by the guide and never modified | 674 lines / 35149 bytes |
 | `test/server.test.js` | The service suite run by `npm test`: one test per endpoint and one for an unregistered path | 69 lines / 2714 bytes |
 | `blitzy/documentation/Project Guide.md` | The development record: status, validation results, open items and operator reference | This file |
@@ -596,7 +599,7 @@ The repository holds eleven tracked files: eight at the root, one in `test/` and
 | Variable | Required | Purpose |
 |---|---|---|
 | `JAVA_HOME` | No | Not used by anything in this project; the `PATH` binaries are sufficient. Set it inline if one of your own tools needs it |
-| `PORT` | No | TCP port for `server.js`; default 3000 |
+| `PORT` | No | TCP port for `server.js`; default 3000 when unset or empty. An override must be a decimal integer from 1 to 65535, leading zeros dropped; any other value is rejected before binding, with exit status 1 |
 | `NODE_ENV` | No | Read by Express itself to select its environment mode; this project neither sets nor requires it |
 | — | — | No other variable and no secret is read by any tracked file |
 
