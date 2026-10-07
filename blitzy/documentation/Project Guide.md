@@ -39,7 +39,7 @@ No release-blocking issue is open: **0 of the 2 requested items** (R1 Express, R
 
 | Issue | Impact | Owner | ETA |
 |---|---|---|---|
-| 2 behaviours delivered beyond the AAP without committed tests: `PORT` validation and exact routing (`server.js`) | Correct at runtime but unguarded against regression; `server.js` lines 27–36 and 59–75 are uncovered | Reviewer / developer | 4.5 h |
+| 2 behaviours delivered beyond the AAP without committed tests: `PORT` validation and exact routing (`server.js`) | Correct at runtime but unguarded against regression; `server.js` lines 27–43 and 66–92 are uncovered | Reviewer / developer | 4.5 h |
 | 1 runtime never exercised: the declared floor, Node.js 20.0.0 | Floor verified on 20.20.2 only, and Node.js 20 is end-of-life | Developer | 1.5 h |
 | 1 operational caveat: SIGTERM to npm's pid alone leaves `node server.js` serving | Port stays bound until the node process is signalled | Operator | None — stop with Ctrl-C or the process group |
 | 1 network-posture item: the service binds all interfaces and sends default Express headers | Exposure only if the host's network is reachable | Owner | 1.5 h, before any non-local deployment |
@@ -65,7 +65,7 @@ No access issues identified. The npm registry needs no credentials, and nothing 
 |---|---|---|
 | npm manifest — `package.json` (R1) | 1.0 | All nine AAP fields: `name`, `version`, `description`, `main`, `scripts.start`, `scripts.test`, `engines.node` `>=20.0.0`, `license` `GPL-3.0-only`, `dependencies.express` `^5.2.1` |
 | Lock file — `package-lock.json` (R1) | 1.5 | Generated with npm 11.19.0: `lockfileVersion` 3, 69 entries, `express` 5.2.1 with its published integrity hash; licence census of all 68 packages (63 MIT, 4 ISC, 1 BSD-3-Clause) |
-| Express service — `server.js` (R2 and the `Hello world` endpoint) | 6.0 | Two plain-text `GET` routes, exact routing, `PORT` resolution with a 3000 default, a guarded `app.listen`, the Express 5 listen-callback failure branch, the `{ app }` export, and inline design comments (77 lines) |
+| Express service — `server.js` (R2 and the `Hello world` endpoint) | 6.0 | Two plain-text `GET` routes, exact routing, `PORT` resolution with a 3000 default, a guarded `app.listen`, the Express 5 listen-callback failure branch, the `{ app }` export, and inline design comments (95 lines) |
 | Contract suite — `test/server.test.js` | 6.0 | Three tests on Node's built-in runner; a per-test `withServer` helper that binds port 0 and tears down deterministically on pass, failure or server error, compatible with the Node.js 20 floor (145 lines) |
 | Runtime record and hygiene — `.nvmrc`, `engines.node`, `.gitignore` | 1.5 | Node.js 24.21.0 recorded for nvm, a `>=20.0.0` floor, and the single rule `node_modules/`; checked on 24.21.0 and 20.20.2 |
 | `README.md` update | 5.0 | All eight sections kept in order; change summary within its 70-word, 8-line budget; prerequisites, run commands, output contract, 11-file layout and licence note; ASCII, LF-only, no line-number citations |
@@ -113,9 +113,9 @@ All results below were executed at HEAD `646f6fe` on 2026-09-28 and observed dir
 
 **Not Covered** — delivered, but not exercised by any committed test:
 
-- **`resolvePort` and the rejected-`PORT` exit** (`server.js` lines 27–36): verified only by runtime probes. Test valid, leading-zero, empty and invalid values before release.
-- **The launch block** (`server.js` lines 58–75): the startup line, the EADDRINUSE message and exit code 1 have no committed test. Add a child-process test.
-- **Exact routing** (`server.js` lines 16–17): removing either setting would not fail the suite. Add `/GOOD-EVENING` and `/good-evening/` 404 assertions.
+- **`resolvePort` and the rejected-`PORT` exit** (`server.js` lines 27–43): verified only by runtime probes. Test valid, leading-zero, empty and invalid values before release.
+- **The launch block** (`server.js` lines 65–92): the startup line, the EADDRINUSE message and exit code 1 have no committed test. Add a child-process test.
+- **Exact routing** (`server.js` lines 18–19): removing either setting would not fail the suite. Add `/GOOD-EVENING` and `/good-evening/` 404 assertions.
 - **`withServer` error branches** (`test/server.test.js`): the setup-failure, mid-test server-error and close-failure paths are not triggered by any committed test.
 - **The declared floor, Node.js 20.0.0**: never executed; 20.20.2 was used. Run the suite on 20.0.0 or raise the floor.
 - **The historical V1–V9 Java acceptance procedure**: kept outside the repository by design and not re-run; the Java contract is covered by the preservation checks above.
@@ -147,7 +147,7 @@ The service has no user interface; its human-facing surface is two plain-text bo
 | 2 | Lock file | Generated, not hand-written; 5.2.1 with integrity hash; `npm ci` reproducible, drift refused | ✅ Pass | 100% | `package-lock.json` |
 | 3 | `GET /` → `Hello world` | 200, `text/plain; charset=utf-8`, exact 11 bytes | ✅ Pass | 100% | `server.js` route 1; suite test 1 |
 | 4 | `GET /good-evening` → `Good evening` | 200, same type, exact 12 bytes | ✅ Pass | 100% | `server.js` route 2; suite test 2 |
-| 5 | Listener and lifecycle | `require.main` guard, `{ app }` export, startup line, one failure branch, two console calls | ✅ Pass (⚠ launch block untested) | 100% | `server.js` lines 58–77 |
+| 5 | Listener and lifecycle | `require.main` guard, `{ app }` export, startup line, one failure branch, two console calls | ✅ Pass (⚠ launch block untested) | 100% | `server.js` lines 65–95 |
 | 6 | Runtime record | `engines.node` `>=20.0.0`; `.nvmrc` `24.21.0` | ✅ Pass (⚠ floor run on 20.20.2) | 100% | `package.json`, `.nvmrc` |
 | 7 | Ignore rule | `node_modules/` only; tree clean after install and run | ✅ Pass | 100% | `.gitignore` |
 | 8 | Contract suite | Three tests on built-ins, no added dependency, bare `node --test` | ✅ Pass | 100% | `test/server.test.js` |
@@ -162,16 +162,16 @@ No user-specified rules were provided, so divergences are measured against the A
 
 | # | What the AAP/Rule Required | What Was Delivered Instead | Why It Diverged | Impact | Remediation |
 |---|---|---|---|---|---|
-| D1 | `PORT` read as `process.env.PORT \|\| 3000` (§0.5.1) | `resolvePort` accepts only 1–65535 and rejects everything else with exit 1 (`server.js` lines 27–36, 58–74) | `app.listen` mishandles non-numeric, `0` and out-of-range values | Safer, but untested; message says "bind" when none was attempted; `server.js` is 77 lines against a planned ~25 | Sign off and add tests, or revert |
-| D2 | Two named routes; variants unspecified (§0.5.1, §0.8.2) | Case-sensitive and strict routing (`server.js` lines 16–17) | Keep variants from answering as a third endpoint | `/good-evening/` returns 404; no committed test guards it | Sign off and add tests, or remove |
+| D1 | `PORT` read as `process.env.PORT \|\| 3000` (§0.5.1) | `resolvePort` accepts only 1–65535 and rejects everything else with exit 1 (`server.js` lines 27–43, 65–91) | `app.listen` mishandles non-numeric, `0` and out-of-range values | Safer, but untested; message says "bind" when none was attempted; `server.js` is 95 lines against a planned ~25 | Sign off and add tests, or revert |
+| D2 | Two named routes; variants unspecified (§0.5.1, §0.8.2) | Case-sensitive and strict routing (`server.js` lines 18–19) | Keep variants from answering as a third endpoint | `/good-evening/` returns 404; no committed test guards it | Sign off and add tests, or remove |
 | D3 | Floor on Node.js 20.0.0; Java on OpenJDK 25.0.4.1; service on port 3000 (§0.4.1, §0.6.1) | Node.js 20.20.2, OpenJDK 25.0.3; port 3000 only in isolated network namespaces | Host prohibits older 20.x installs; 25.0.4.1 unavailable; port 3000 shared | Floor claim unproven on 20.0.0; Node.js 20 is end-of-life | Run on 20.0.0, or raise the floor |
 | D4 | Manifest written without dependencies, then `npm install express@5.2.1` (§0.7.2) | Manifest committed complete in `e45e558`; lock generated in `87a8aaf` | Not recorded | None: lock pins 5.2.1 with the AAP's integrity hash | None required |
 | D5 | Stop with Ctrl-C or by killing the pid captured at launch (§0.6.1) | SIGTERM to npm's pid alone leaves `node server.js` serving | Consequence of the AAP-specified `scripts.start` and default signal handling | Port stays bound if only npm is signalled | None in code; use a documented stop path |
 | D6 | AAP-sanctioned: per-file GPL notice (F-006-RQ-005) and `Hello.class` ignore rule (E-3) left open (§0.4.3, §0.7.2) | Neither added | No rights holder or year recorded; E-3 is an owner decision | Notice gap in three source files; untracked class after in-place compile | Owner supplies holder and year; decides the ignore rule |
 
-**D1 — `PORT` validation.** The AAP reads the port as `process.env.PORT || 3000`. `server.js` resolves it through `resolvePort` (lines 27–36) instead, accepting only a decimal integer from 1 to 65535. Any other value exits 1 with `Failed to bind port: PORT must be a decimal integer from 1 to 65535` (lines 58–74, commit `a33214b`). The comment at lines 21–26 records why: `app.listen` treats a non-numeric value as an IPC socket path, binds an OS-chosen port the startup line cannot name for `0`, and throws above 65535. The behaviour is sound but has no committed test, and its message says "bind" although nothing was bound. The reviewer should accept it and add tests, or revert it.
+**D1 — `PORT` validation.** The AAP reads the port as `process.env.PORT || 3000`. `server.js` resolves it through `resolvePort` (lines 27–43) instead, accepting only a decimal integer from 1 to 65535. Any other value exits 1 with `Failed to bind port: PORT must be a decimal integer from 1 to 65535` (lines 65–91, commit `a33214b`). The comments at lines 32–34 and 40–41 record why: `app.listen` treats a non-numeric value as an IPC socket path, binds an OS-chosen port the startup line cannot name for `0`, and throws above 65535. The behaviour is sound but has no committed test, and its message says "bind" although nothing was bound. The reviewer should accept it and add tests, or revert it.
 
-**D2 — Exact routing.** The AAP names two paths but says nothing about letter case or trailing slashes, while §0.8.2 states that only `GET /` and `GET /good-evening` exist. Express's defaults would answer `/GOOD-EVENING` and `/good-evening/` with a greeting. `server.js` therefore enables `case sensitive routing` and `strict routing` before registering routes (lines 16–17, commit `0ece6c6`), so every variant falls through to the built-in 404, as `README.md` §Expected Output states. The trade-off is that a browser URL typed with a trailing slash returns 404, and no committed test guards either setting. The owner should decide whether the stricter contract stays, and if so add variant assertions to `test/server.test.js`.
+**D2 — Exact routing.** The AAP names two paths but says nothing about letter case or trailing slashes, while §0.8.2 states that only `GET /` and `GET /good-evening` exist. Express's defaults would answer `/GOOD-EVENING` and `/good-evening/` with a greeting. `server.js` therefore enables `case sensitive routing` and `strict routing` before registering routes (lines 18–19, commit `0ece6c6`), so every variant falls through to the built-in 404, as `README.md` §Expected Output states. The trade-off is that a browser URL typed with a trailing slash returns 404, and no committed test guards either setting. The owner should decide whether the stricter contract stays, and if so add variant assertions to `test/server.test.js`.
 
 **D3 — Verification runtimes.** The AAP exercises the floor on Node.js 20.0.0, runs the Java checks on OpenJDK 25.0.4.1 and starts the service on port 3000. On the verification host, installing any Node.js 20.x below 20.20.2 is prohibited, 25.0.3 is the only available OpenJDK 25 build, and port 3000 is shared. So the suite and service ran on 20.20.2, the Java checks on 25.0.3, and literal-3000 commands only inside isolated network namespaces. npm's engine check accepts 20.0.0, but the root-hook behaviour that shaped the test helper was never reproduced. Node.js 20 reached end-of-life on 2026-03-24, so run the suite on 20.0.0 in an isolated environment, or raise the floor.
 
@@ -185,7 +185,7 @@ No user-specified rules were provided, so divergences are measured against the A
 
 | Risk | Category | Severity | Probability | Mitigation | Status |
 |---|---|---|---|---|---|
-| Behaviour delivered without a committed test (`resolvePort`, launch block, exact routing) regresses unnoticed; `server.js` line coverage is 64.94% | Technical | Medium | Medium | Add child-process and variant-route tests (Section 2.2) | Open |
+| Behaviour delivered without a committed test (`resolvePort`, launch block, exact routing) regresses unnoticed; `server.js` line coverage is 53.68% | Technical | Medium | Medium | Add child-process and variant-route tests (Section 2.2) | Open |
 | Declared floor `>=20.0.0` names an end-of-life runtime (Node.js 20, EOL 2026-03-24) that was never run at 20.0.0 | Technical / Integration | Medium | Medium | Run on 20.0.0 or raise the floor; deploy on the Node.js 24.21.0 recorded in `.nvmrc` | Open |
 | The service binds all interfaces (`:::<PORT>`) while its startup line says `localhost`, so it is reachable from the host's network | Security | Medium | Medium | Pass an explicit host to `app.listen`, or firewall the port | Accepted (AAP default) |
 | Default headers: `X-Powered-By: Express`; no `nosniff`, CSP or `X-Frame-Options` on 200 responses; `NODE_ENV` unset would render a stack trace if a future handler threw | Security | Low | Low | `app.disable('x-powered-by')`, set headers in both handlers, run with `NODE_ENV=production` | Accepted (AAP default) |
@@ -349,7 +349,7 @@ npm audit
 git status --short
 ```
 
-Here `NODE20_HOME` is the directory of any Node.js 20 installation. Expected: `# tests 3`, `# pass 3` and `# fail 0` on each runtime; `server.js` at 64.94% line coverage; `found 0 vulnerabilities`; and no output from `git status`.
+Here `NODE20_HOME` is the directory of any Node.js 20 installation. Expected: `# tests 3`, `# pass 3` and `# fail 0` on each runtime; `server.js` at 53.68% line coverage; `found 0 vulnerabilities`; and no output from `git status`.
 
 ## 9.7 Example Usage
 
