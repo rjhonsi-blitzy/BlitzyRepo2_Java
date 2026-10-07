@@ -1,0 +1,17 @@
+{
+  "name": "hello",
+  "version": "1.0.0",
+  "description": "Express service answering GET / with Hello world and GET /good-evening with Good evening",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
