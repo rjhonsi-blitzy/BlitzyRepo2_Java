@@ -161,7 +161,7 @@ Confidence is **high** on the completed figures: the deliverable is two files an
 
 # 3. Test Results
 
-All results below were executed at HEAD `646f6fe` on 2026-09-28 and observed directly.
+The results in the table below were executed at HEAD `646f6fe` on 2026-09-28 and observed directly; the Not Covered list that follows it cites the current `server.js`, and the `2a78292` record further below carries its own date.
 
 | Area / Category | Framework | Tests | Passed | Failed | Coverage | What This Proves |
 |---|---|---|---|---|---|---|
