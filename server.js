@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // Strict mode makes accidental globals and silent errors throw.
 
 // Express service answering two fixed plain-text endpoints. It is an entry
 // point independent of Hello.java: launched with `npm start`, it serves no
@@ -64,7 +64,7 @@ app.get('/good-evening', (req, res) => {
 // so a client can safely retry a request that was cut.
 if (require.main === module) {
   // PORT is resolved here rather than at load for the same reason, so
-  // requiring the module reads no environment variable.
+  // requiring the module never reads PORT.
   const port = resolvePort(process.env.PORT);
 
   // Listen callback holding the service's single failure branch. Express 5
